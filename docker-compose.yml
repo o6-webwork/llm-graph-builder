@@ -34,7 +34,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL-http://192.168.137.188:8000}
+        - VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL}
         - VITE_REACT_APP_SOURCES=${VITE_REACT_APP_SOURCES-local,wiki,s3}
         - VITE_TIME_PER_PAGE=${VITE_TIME_PER_PAGE-50}
         - VITE_CHUNK_SIZE=${VITE_CHUNK_SIZE-5242880}
