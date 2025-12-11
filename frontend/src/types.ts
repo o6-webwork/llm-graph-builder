@@ -86,6 +86,8 @@ export type ExtractParams = Pick<CustomFile, 'wikiQuery' | 'model' | 'sourceUrl'
   gcs_project_id?: string;
   retry_condition: string;
   additional_instructions?: string;
+  custom_llm_model?: string;
+  custom_llm_base_url?: string;
 } & { [key: string]: any };
 
 export type UploadParams = {
@@ -94,6 +96,8 @@ export type UploadParams = {
   chunkNumber: number;
   totalChunks: number;
   originalname: string;
+  custom_llm_model?: string;
+  custom_llm_base_url?: string;
 } & { [key: string]: any };
 
 export type FormDataParams = ExtractParams | UploadParams;
@@ -357,6 +361,8 @@ export interface ScanProps {
   source_type?: string;
   gcs_project_id?: string;
   access_token?: string;
+  custom_llm_model?: string;
+  custom_llm_base_url?: string;
 }
 export type alertStateType = {
   showAlert: boolean;
@@ -884,6 +890,12 @@ export interface FileContextType {
   setFilesData: Dispatch<SetStateAction<CustomFile[]>>;
   model: string;
   setModel: Dispatch<SetStateAction<string>>;
+  selectedModelOption: string;
+  setSelectedModelOption: Dispatch<SetStateAction<string>>;
+  customLLMModel: string;
+  setCustomLLMModel: Dispatch<SetStateAction<string>>;
+  customLLMBaseUrl: string;
+  setCustomLLMBaseUrl: Dispatch<SetStateAction<string>>;
   graphType: string;
   setGraphType: Dispatch<SetStateAction<string>>;
   selectedTokenChunkSize: number;

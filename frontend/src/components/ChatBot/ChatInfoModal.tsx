@@ -38,6 +38,7 @@ import MultiModeMetrics from './MultiModeMetrics';
 import getAdditionalMetrics from '../../services/AdditionalMetrics';
 import { withVisibility } from '../../HOC/WithVisibility';
 import MetricsCheckbox from './MetricsCheckbox';
+import { useFileContext } from '../../context/UsersFiles';
 
 const ChatInfoModal: React.FC<chatInfoMessage> = ({
   sources,
@@ -107,6 +108,9 @@ const ChatInfoModal: React.FC<chatInfoMessage> = ({
         ? false
         : null
   );
+  const { selectedModelOption, customLLMBaseUrl, customLLMModel } = useFileContext();
+  const customModelToUse = selectedModelOption === 'custom' ? customLLMModel : undefined;
+  const customUrlToUse = selectedModelOption === 'custom' ? customLLMBaseUrl : undefined;
   const actions: React.ComponentProps<typeof IconButton<'button'>>[] = useMemo(
     () => [
       {
@@ -208,13 +212,28 @@ const ChatInfoModal: React.FC<chatInfoMessage> = ({
       try {
         toggleMetricsLoading();
         metricsPromise.push(
-          getChatMetrics(metricquestion, [metriccontexts], [metricanswer], metricmodel, [defaultMode])
+          getChatMetrics(
+            metricquestion,
+            [metriccontexts],
+            [metricanswer],
+            metricmodel,
+            [defaultMode],
+            customModelToUse,
+            customUrlToUse
+          )
         );
         if (referenceText.trim() != '') {
           metricsPromise.push(
-            getAdditionalMetrics(metricquestion, [metriccontexts], [metricanswer], referenceText, metricmodel, [
-              defaultMode,
-            ])
+            getAdditionalMetrics(
+              metricquestion,
+              [metriccontexts],
+              [metricanswer],
+              referenceText,
+              metricmodel,
+              [defaultMode],
+              customModelToUse,
+              customUrlToUse
+            )
           );
           toggleReferenceVisibility();
         }
@@ -262,7 +281,15 @@ const ChatInfoModal: React.FC<chatInfoMessage> = ({
       });
       try {
         metricsPromise.push(
-          getChatMetrics(metricquestion, contextarray as string[], answerarray as string[], metricmodel, modesarray)
+          getChatMetrics(
+            metricquestion,
+            contextarray as string[],
+            answerarray as string[],
+            metricmodel,
+            modesarray,
+            customModelToUse,
+            customUrlToUse
+          )
         );
         if (referenceText.trim() != '') {
           metricsPromise.push(
@@ -272,7 +299,9 @@ const ChatInfoModal: React.FC<chatInfoMessage> = ({
               answerarray as string[],
               referenceText,
               metricmodel,
-              modesarray
+              modesarray,
+              customModelToUse,
+              customUrlToUse
             )
           );
           toggleReferenceVisibility();

@@ -22,6 +22,10 @@ const urlScanAPI = async (props: ScanProps) => {
     if (props.model != undefined) {
       formData.append('model', props?.model);
     }
+    if (props.custom_llm_model && props.custom_llm_base_url) {
+      formData.append('custom_llm_model', props.custom_llm_model);
+      formData.append('custom_llm_base_url', props.custom_llm_base_url);
+    }
     if (props.accessKey?.length) {
       formData.append('aws_access_key_id', props?.accessKey);
     }
