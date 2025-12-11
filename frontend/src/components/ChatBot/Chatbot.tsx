@@ -38,6 +38,7 @@ import useSpeechSynthesis from '../../hooks/useSpeech';
 import ButtonWithToolTip from '../UI/ButtonWithToolTip';
 import FallBackDialog from '../UI/FallBackDialog';
 import { downloadClickHandler, getDateTime } from '../../utils/Utils';
+import { showErrorToast } from '../../utils/Toasts';
 import ChatModesSwitch from './ChatModesSwitch';
 import CommonActions from './CommonChatActions';
 import Loader from '../../utils/Loader';
@@ -64,7 +65,8 @@ const Chatbot: FC<ChatbotProps> = (props) => {
   } = props;
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState<boolean>(isLoading);
-  const { model, chatModes, selectedRows, filesData } = useFileContext();
+  const { model, chatModes, selectedRows, filesData, selectedModelOption, customLLMModel, customLLMBaseUrl } =
+    useFileContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   const [sourcesModal, setSourcesModal] = useState<string[]>([]);
@@ -191,6 +193,10 @@ const Chatbot: FC<ChatbotProps> = (props) => {
     if (!inputMessage.trim()) {
       return;
     }
+    if (selectedModelOption === 'custom' && (!customLLMBaseUrl.trim() || !customLLMModel.trim())) {
+      showErrorToast('Please provide a custom LLM URL and model name before asking a question.', true);
+      return;
+    }
     const datetime = getDateTime();
     const userMessage: Messages = {
       id: Date.now(),
@@ -213,13 +219,17 @@ const Chatbot: FC<ChatbotProps> = (props) => {
     };
     setListMessages((prev) => [...prev, chatbotMessage]);
     try {
+      const customModelToUse = selectedModelOption === 'custom' ? customLLMModel : undefined;
+      const customUrlToUse = selectedModelOption === 'custom' ? customLLMBaseUrl : undefined;
       const apiCalls = chatModes.map((mode) =>
         chatBotAPI(
           inputMessage,
           sessionId,
           model,
           mode,
-          selectedFileNames?.map((f) => f.name)
+          selectedFileNames?.map((f) => f.name),
+          customModelToUse,
+          customUrlToUse
         )
       );
       setInputMessage('');
@@ -577,7 +587,11 @@ const Chatbot: FC<ChatbotProps> = (props) => {
               placement='top'
               text={`Ask a question.`}
               type='submit'
-              disabled={loading || !connectionStatus}
+              disabled={
+                loading ||
+                !connectionStatus ||
+                (selectedModelOption === 'custom' && (!customLLMBaseUrl.trim() || !customLLMModel.trim()))
+              }
               size='medium'
             >
               {buttonCaptions.ask}{' '}

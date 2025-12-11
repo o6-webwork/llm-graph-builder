@@ -6,7 +6,9 @@ export const getChatMetrics = async (
   context: string[],
   answer: string[],
   model: string,
-  mode: string[]
+  mode: string[],
+  customLLMModel?: string,
+  customLLMBaseUrl?: string
 ) => {
   const formData = new FormData();
   formData.append('question', question);
@@ -14,6 +16,10 @@ export const getChatMetrics = async (
   formData.append('answer', JSON.stringify(answer));
   formData.append('model', model);
   formData.append('mode', JSON.stringify(mode));
+  if (customLLMModel && customLLMBaseUrl) {
+    formData.append('custom_llm_model', customLLMModel);
+    formData.append('custom_llm_base_url', customLLMBaseUrl);
+  }
   try {
     const response = await api.post<MetricsResponse>(`/metric`, formData);
     return response;

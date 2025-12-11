@@ -6,6 +6,7 @@ import {
   Flex,
   StatusIndicator,
   useMediaQuery,
+  TextInput,
   Menu,
   SpotlightTarget,
   useSpotlightContext,
@@ -47,7 +48,7 @@ import { useMessageContext } from '../context/UserMessages';
 import PostProcessingToast from './Popups/GraphEnhancementDialog/PostProcessingCheckList/PostProcessingToast';
 import { getChunkText } from '../services/getChunkText';
 import ChunkPopUp from './Popups/ChunkPopUp';
-import { isExpired, isFileReadyToProcess } from '../utils/Utils';
+import { capitalizeWithUnderscore, isExpired, isFileReadyToProcess } from '../utils/Utils';
 import { useHasSelections } from '../hooks/useHasSelections';
 import { ChevronUpIconOutline, ChevronDownIconOutline } from '@neo4j-ndl/react/icons';
 import { ThemeWrapperContext } from '../context/ThemeWrapper';
@@ -104,6 +105,12 @@ const Content: React.FC<ContentProps> = ({
     filesData,
     setFilesData,
     setModel,
+    selectedModelOption,
+    setSelectedModelOption,
+    customLLMBaseUrl,
+    setCustomLLMBaseUrl,
+    customLLMModel,
+    setCustomLLMModel,
     selectedNodes,
     selectedRels,
     selectedTokenChunkSize,
@@ -228,26 +235,65 @@ const Content: React.FC<ContentProps> = ({
   const isFirstTimeUser = useMemo(() => {
     return localStorage.getItem('neo4j.connection') === null;
   }, []);
+
+  const applyModelToPendingFiles = useCallback(
+    (nextModel: string) => {
+      setFilesData((prevfiles) => {
+        return prevfiles.map((curfile) => {
+          return {
+            ...curfile,
+            model:
+              curfile.status === 'New' || curfile.status === 'Ready to Reprocess' ? (nextModel ?? '') : curfile.model,
+          };
+        });
+      });
+    },
+    [setFilesData]
+  );
+  const isCustomModelSelected = selectedModelOption === 'custom';
+  const isCustomConfigValid = isCustomModelSelected
+    ? customLLMModel.trim().length > 0 && customLLMBaseUrl.trim().length > 0
+    : true;
+  const dropdownValue = useMemo<OptionType | undefined>(() => {
+    if (!selectedModelOption) {
+      return undefined;
+    }
+    if (selectedModelOption === 'custom') {
+      return { value: 'custom', label: customLLMModel ? `Custom (${customLLMModel})` : 'Custom' };
+    }
+    return { value: selectedModelOption, label: capitalizeWithUnderscore(selectedModelOption) };
+  }, [customLLMModel, selectedModelOption]);
+
   useEffect(() => {
     if (!isAuthenticated && !connectionStatus && isFirstTimeUser) {
       setIsOpen(true);
     }
   }, [connectionStatus, isAuthenticated, isFirstTimeUser]);
   const handleDropdownChange = (selectedOption: OptionType | null | void) => {
-    if (selectedOption?.value) {
-      setModel(selectedOption?.value);
+    const selectedValue = selectedOption?.value ?? '';
+    setSelectedModelOption(selectedValue);
+    localStorage.setItem('selectedModel', selectedValue);
+    if (selectedValue === 'custom') {
+      setModel(customLLMModel);
+      applyModelToPendingFiles(customLLMModel);
+      return;
     }
-    setFilesData((prevfiles) => {
-      return prevfiles.map((curfile) => {
-        return {
-          ...curfile,
-          model:
-            curfile.status === 'New' || curfile.status === 'Ready to Reprocess'
-              ? (selectedOption?.value ?? '')
-              : curfile.model,
-        };
-      });
-    });
+    setModel(selectedValue);
+    applyModelToPendingFiles(selectedValue);
+  };
+  const handleCustomModelChange = (value: string) => {
+    const sanitizedValue = value.trim();
+    setCustomLLMModel(sanitizedValue);
+    localStorage.setItem('customLLMModel', sanitizedValue);
+    if (isCustomModelSelected) {
+      setModel(sanitizedValue);
+      applyModelToPendingFiles(sanitizedValue);
+    }
+  };
+  const handleCustomUrlChange = (value: string) => {
+    const sanitizedValue = value.trim();
+    setCustomLLMBaseUrl(sanitizedValue);
+    localStorage.setItem('customLLMBaseUrl', sanitizedValue);
   };
   const getChunks = async (name: string, pageNo: number) => {
     chunksTextAbortController.current = new AbortController();
@@ -322,7 +368,9 @@ const Content: React.FC<ContentProps> = ({
         fileItem.googleProjectId,
         fileItem.language,
         fileItem.accessToken,
-        additionalInstructions
+        additionalInstructions,
+        isCustomModelSelected ? customLLMModel : undefined,
+        isCustomModelSelected ? customLLMBaseUrl : undefined
       );
       if (apiResponse?.status === 'Failed') {
         let errorobj = { error: apiResponse.error, message: apiResponse.message, fileName: apiResponse.file_name };
@@ -689,8 +737,8 @@ const Content: React.FC<ContentProps> = ({
   );
 
   const disableCheck = useMemo(
-    () => (!selectedfileslength ? dropdowncheck : !newFilecheck),
-    [selectedfileslength, filesData, newFilecheck]
+    () => (!selectedfileslength ? dropdowncheck : !newFilecheck) || (isCustomModelSelected && !isCustomConfigValid),
+    [selectedfileslength, dropdowncheck, newFilecheck, isCustomConfigValid, isCustomModelSelected]
   );
 
   const showGraphCheck = useMemo(
@@ -749,6 +797,10 @@ const Content: React.FC<ContentProps> = ({
   };
 
   const onClickHandler = () => {
+    if (isCustomModelSelected && !isCustomConfigValid) {
+      showErrorToast('Please provide a custom model URL and model name.');
+      return;
+    }
     const selectedRows = childRef.current?.getSelectedRows();
     if (selectedRows?.length) {
       const expiredFilesExists = selectedRows.some(
@@ -1023,10 +1075,33 @@ const Content: React.FC<ContentProps> = ({
               onSelect={handleDropdownChange}
               options={llms ?? ['']}
               placeholder='Select LLM Model'
-              defaultValue={model}
+              defaultValue={selectedModelOption}
+              value={dropdownValue}
               view='ContentView'
               isDisabled={false}
             />
+            {isCustomModelSelected && (
+              <div className='mt-2 flex flex-col gap-2 w-[320px] max-w-full'>
+                <TextInput
+                  value={customLLMBaseUrl}
+                  onChange={(e) => handleCustomUrlChange(e.target.value)}
+                  isFluid
+                  label='Custom LLM URL'
+                  htmlAttributes={{
+                    placeholder: 'https://your-llm-endpoint/v1',
+                  }}
+                />
+                <TextInput
+                  value={customLLMModel}
+                  onChange={(e) => handleCustomModelChange(e.target.value)}
+                  isFluid
+                  label='Custom Model Name'
+                  htmlAttributes={{
+                    placeholder: 'e.g. my-model-name',
+                  }}
+                />
+              </div>
+            )}
           </div>
           <Flex flexDirection='row' gap='4' className='self-end mb-2.5' flexWrap='wrap'>
             <SpotlightTarget id='generategraphbtn'>

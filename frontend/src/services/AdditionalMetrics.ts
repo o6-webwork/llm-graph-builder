@@ -6,7 +6,9 @@ const getAdditionalMetrics = async (
   answer: string[],
   reference: string,
   model: string,
-  mode: string[]
+  mode: string[],
+  customLLMModel?: string,
+  customLLMBaseUrl?: string
 ) => {
   try {
     const formData = new FormData();
@@ -16,6 +18,10 @@ const getAdditionalMetrics = async (
     formData.append('reference', reference ?? '');
     formData.append('model', model ?? '');
     formData.append('mode', JSON.stringify(mode) ?? '');
+    if (customLLMModel && customLLMBaseUrl) {
+      formData.append('custom_llm_model', customLLMModel);
+      formData.append('custom_llm_base_url', customLLMBaseUrl);
+    }
 
     const response = await api.post(`/additional_metrics`, formData, {
       headers: {

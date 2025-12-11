@@ -31,16 +31,26 @@ const FileContextProvider: FC<FileContextProviderProps> = ({ children }) => {
   const selectedChunk_overlapStr = localStorage.getItem('selectedChunk_overlap');
   const selectedChunks_to_combineStr = localStorage.getItem('selectedChunks_to_combine');
   const persistedQueue = localStorage.getItem('waitingQueue');
-  const selectedModel = localStorage.getItem('selectedModel');
+  const selectedModelOptionFromStorage = localStorage.getItem('selectedModel');
+  const storedCustomLLMModel = localStorage.getItem('customLLMModel') ?? '';
+  const storedCustomLLMBaseUrl = localStorage.getItem('customLLMBaseUrl') ?? '';
   const selectedInstructstr = localStorage.getItem('instructions');
-  const isProdDefaultModel = isProdEnv && selectedModel && PRODMODLES.includes(selectedModel);
+  const defaultModelOption = isProdEnv ? PRODMODLES[0] : llms[0];
+  const resolvedModelOption =
+    selectedModelOptionFromStorage && (!isProdEnv || PRODMODLES.includes(selectedModelOptionFromStorage))
+      ? selectedModelOptionFromStorage
+      : defaultModelOption;
+  const initialModelValue = resolvedModelOption === 'custom' ? storedCustomLLMModel : resolvedModelOption;
   const { userCredentials } = useCredentials();
   const [files, setFiles] = useState<(File | null)[] | []>([]);
   const [filesData, setFilesData] = useState<CustomFile[] | []>([]);
   const [queue, setQueue] = useState<Queue<CustomFile>>(
     new Queue(JSON.parse(persistedQueue ?? JSON.stringify({ queue: [] })).queue)
   );
-  const [model, setModel] = useState<string>(isProdDefaultModel ? selectedModel : isProdEnv ? PRODMODLES[0] : llms[0]);
+  const [selectedModelOption, setSelectedModelOption] = useState<string>(resolvedModelOption);
+  const [customLLMModel, setCustomLLMModel] = useState<string>(storedCustomLLMModel);
+  const [customLLMBaseUrl, setCustomLLMBaseUrl] = useState<string>(storedCustomLLMBaseUrl);
+  const [model, setModel] = useState<string>(initialModelValue);
   const [graphType, setGraphType] = useState<string>('Knowledge Graph Entities');
   const [selectedNodes, setSelectedNodes] = useState<readonly OptionType[]>([]);
   const [selectedRels, setSelectedRels] = useState<readonly OptionType[]>([]);
@@ -153,6 +163,12 @@ const FileContextProvider: FC<FileContextProviderProps> = ({ children }) => {
     setFilesData,
     model,
     setModel,
+    selectedModelOption,
+    setSelectedModelOption,
+    customLLMModel,
+    setCustomLLMModel,
+    customLLMBaseUrl,
+    setCustomLLMBaseUrl,
     graphType,
     setGraphType,
     selectedRels,

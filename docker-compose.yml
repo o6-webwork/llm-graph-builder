@@ -6,7 +6,7 @@ services:
     volumes:
       - ./backend:/code
     environment:
-      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_URI=neo4j://192.168.137.188:7687
       - NEO4J_PASSWORD=${NEO4J_PASSWORD-neo4j}
       - NEO4J_USERNAME=${NEO4J_USERNAME-neo4j}
       - GCP_LOG_METRICS_ENABLED=False
@@ -17,7 +17,7 @@ services:
       - UPDATE_GRAPH_CHUNKS_PROCESSED=${UPDATE_GRAPH_CHUNKS_PROCESSED-20}
       - NUMBER_OF_CHUNKS_TO_COMBINE=${NUMBER_OF_CHUNKS_TO_COMBINE-6}
       - ENTITY_EMBEDDING=${ENTITY_EMBEDDING-False}
-      - LLM_MODEL_CONFIG_local_gpt=${LLM_MODEL_CONFIG_local_gpt}
+      - LLM_MODEL_CONFIG_local_gpt=${LLM_MODEL_CONFIG_local_gpt-Gemma2-9B-Sealion-V3-Instruct,http://100.108.2.57/vllm_sealion/v1,dummy}
       - DEFAULT_DIFFBOT_CHAT_MODEL=${DEFAULT_DIFFBOT_CHAT_MODEL-local_gpt}
     container_name: neo4j-backend
     # extra_hosts:
@@ -34,7 +34,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL}
+        - VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL-http://192.168.137.188:8000}
         - VITE_REACT_APP_SOURCES=${VITE_REACT_APP_SOURCES-local,wiki,s3}
         - VITE_TIME_PER_PAGE=${VITE_TIME_PER_PAGE-50}
         - VITE_CHUNK_SIZE=${VITE_CHUNK_SIZE-5242880}

@@ -5,7 +5,9 @@ export const chatBotAPI = async (
   session_id: string,
   model: string,
   mode: string,
-  document_names?: (string | undefined)[]
+  document_names?: (string | undefined)[],
+  customLLMModel?: string,
+  customLLMBaseUrl?: string
 ) => {
   try {
     const formData = new FormData();
@@ -14,6 +16,10 @@ export const chatBotAPI = async (
     formData.append('model', model);
     formData.append('mode', mode);
     formData.append('document_names', JSON.stringify(document_names));
+    if (customLLMModel && customLLMBaseUrl) {
+      formData.append('custom_llm_model', customLLMModel);
+      formData.append('custom_llm_base_url', customLLMBaseUrl);
+    }
     const startTime = Date.now();
     const response = await api.post(`/chat_bot`, formData, {
       headers: {

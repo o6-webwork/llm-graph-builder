@@ -18,7 +18,7 @@ const GCSModal: React.FC<GCSModalProps> = ({ hideModal, open, openGCSModal }) =>
   const [statusMessage, setStatusMessage] = useState<string>('');
   const { showAlert } = useAlertContext();
 
-  const { setFilesData, model, filesData } = useFileContext();
+  const { setFilesData, model, filesData, selectedModelOption, customLLMModel, customLLMBaseUrl } = useFileContext();
 
   const defaultValues: CustomFileBase = {
     processingTotalTime: 0,
@@ -48,6 +48,10 @@ const GCSModal: React.FC<GCSModalProps> = ({ hideModal, open, openGCSModal }) =>
   const googleLogin = useGoogleLogin({
     onSuccess: async (codeResponse) => {
       try {
+        if (selectedModelOption === 'custom' && (!customLLMModel.trim() || !customLLMBaseUrl.trim())) {
+          showErrorToast('Please provide custom LLM URL and model name.');
+          return;
+        }
         setStatus('info');
         setStatusMessage('Loading...');
         openGCSModal();
@@ -60,6 +64,8 @@ const GCSModal: React.FC<GCSModalProps> = ({ hideModal, open, openGCSModal }) =>
           source_type: 'gcs bucket',
           gcs_project_id: projectId,
           access_token: codeResponse.access_token,
+          custom_llm_model: selectedModelOption === 'custom' ? customLLMModel : undefined,
+          custom_llm_base_url: selectedModelOption === 'custom' ? customLLMBaseUrl : undefined,
         });
         if (apiResponse.data.status == 'Failed' || !apiResponse.data) {
           showErrorToast(apiResponse?.data?.message);

@@ -27,7 +27,7 @@ const SchemaFromTextDialog = ({ open, onClose, onApply }: SchemaFromTextProps) =
   const [userText, setUserText] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [isSchemaText, setIsSchemaText] = useState<boolean>(false);
-  const { model } = useFileContext();
+  const { model, selectedModelOption, customLLMModel, customLLMBaseUrl } = useFileContext();
   const {
     schemaValNodes,
     setSchemaValNodes,
@@ -46,9 +46,20 @@ const SchemaFromTextDialog = ({ open, onClose, onApply }: SchemaFromTextProps) =
   const [viewPoint, setViewPoint] = useState<string>('');
 
   const clickHandler = useCallback(async () => {
+    if (selectedModelOption === 'custom' && (!customLLMBaseUrl.trim() || !customLLMModel.trim())) {
+      showNormalToast('Please provide custom LLM URL and model name.');
+      return;
+    }
     setLoading(true);
     try {
-      const response = await getNodeLabelsAndRelTypesFromText(model, userText, isSchemaText, false);
+      const response = await getNodeLabelsAndRelTypesFromText(
+        model,
+        userText,
+        isSchemaText,
+        false,
+        selectedModelOption === 'custom' ? customLLMModel : undefined,
+        selectedModelOption === 'custom' ? customLLMBaseUrl : undefined
+      );
       setLoading(false);
       const { status, message, data } = response.data;
       if (status === 'Success' && data?.triplets?.length) {
@@ -80,10 +91,11 @@ const SchemaFromTextDialog = ({ open, onClose, onApply }: SchemaFromTextProps) =
       }
     } catch (error: any) {
       setLoading(false);
+      // eslint-disable-next-line no-console
       console.error('Error processing schema:', error);
       showNormalToast(error?.message || 'Unexpected error occurred.');
     }
-  }, [model, userText, isSchemaText]);
+  }, [model, userText, isSchemaText, selectedModelOption, customLLMModel, customLLMBaseUrl]);
 
   const handleRemovePattern = (pattern: string) => {
     const updatedPatterns = schemaTextPattern.filter((p) => p !== pattern);

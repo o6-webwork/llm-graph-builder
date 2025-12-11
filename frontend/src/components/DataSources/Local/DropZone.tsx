@@ -12,7 +12,7 @@ import { uploadAPI } from '../../../utils/FileAPI';
 import { showErrorToast, showSuccessToast } from '../../../utils/Toasts';
 
 const DropZone: FunctionComponent = () => {
-  const { filesData, setFilesData, model } = useFileContext();
+  const { filesData, setFilesData, model, selectedModelOption, customLLMModel, customLLMBaseUrl } = useFileContext();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isClicked, setIsClicked] = useState<boolean>(false);
   const { userCredentials } = useCredentials();
@@ -86,6 +86,13 @@ const DropZone: FunctionComponent = () => {
   }, [selectedFiles]);
 
   const uploadFileInChunks = (file: File) => {
+    if (selectedModelOption === 'custom' && (!customLLMModel.trim() || !customLLMBaseUrl.trim())) {
+      showErrorToast('Provide custom LLM URL and model name before uploading.', true);
+      setIsClicked(false);
+      return;
+    }
+    const customModelToUse = selectedModelOption === 'custom' ? customLLMModel : undefined;
+    const customUrlToUse = selectedModelOption === 'custom' ? customLLMBaseUrl : undefined;
     const totalChunks = Math.ceil(file.size / chunkSize);
     const chunkProgressIncrement = 100 / totalChunks;
     let chunkNumber = 1;
@@ -116,7 +123,15 @@ const DropZone: FunctionComponent = () => {
           })
         );
         try {
-          const apiResponse = await uploadAPI(chunk, model, chunkNumber, totalChunks, file.name);
+          const apiResponse = await uploadAPI(
+            chunk,
+            model,
+            chunkNumber,
+            totalChunks,
+            file.name,
+            customModelToUse,
+            customUrlToUse
+          );
           if (apiResponse?.status === 'Failed') {
             throw new Error(`message:${apiResponse.data.message},fileName:${apiResponse.data.file_name}`);
           } else {
