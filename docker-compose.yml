@@ -19,6 +19,7 @@ services:
       - ENTITY_EMBEDDING=${ENTITY_EMBEDDING-False}
       - LLM_MODEL_CONFIG_local_gpt=${LLM_MODEL_CONFIG_local_gpt-Gemma2-9B-Sealion-V3-Instruct,http://100.108.2.57/vllm_sealion/v1,dummy}
       - DEFAULT_DIFFBOT_CHAT_MODEL=${DEFAULT_DIFFBOT_CHAT_MODEL-local_gpt}
+      - OPENAI_API_KEY=dummy
     container_name: neo4j-backend
     # extra_hosts:
     #   - host.docker.internal:host-gateway

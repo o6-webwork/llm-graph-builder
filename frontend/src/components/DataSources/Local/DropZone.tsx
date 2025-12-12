@@ -93,6 +93,7 @@ const DropZone: FunctionComponent = () => {
     }
     const customModelToUse = selectedModelOption === 'custom' ? customLLMModel : undefined;
     const customUrlToUse = selectedModelOption === 'custom' ? customLLMBaseUrl : undefined;
+    const customApiKeyToUse = selectedModelOption === 'custom' ? 'dummy' : undefined;
     const totalChunks = Math.ceil(file.size / chunkSize);
     const chunkProgressIncrement = 100 / totalChunks;
     let chunkNumber = 1;
@@ -130,7 +131,8 @@ const DropZone: FunctionComponent = () => {
             totalChunks,
             file.name,
             customModelToUse,
-            customUrlToUse
+            customUrlToUse,
+            customApiKeyToUse
           );
           if (apiResponse?.status === 'Failed') {
             throw new Error(`message:${apiResponse.data.message},fileName:${apiResponse.data.file_name}`);

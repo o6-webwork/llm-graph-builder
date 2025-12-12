@@ -82,6 +82,8 @@ export default function useSourceInput(
           if (selectedModelOption === 'custom') {
             params.custom_llm_model = customLLMModel;
             params.custom_llm_base_url = customLLMBaseUrl;
+            params.custom_llm_api_key = 'dummy';
+            params.api_key = 'dummy';
           }
           if (isWikiQuery) {
             params.wikiquery = url.trim();

@@ -23,7 +23,11 @@ const DropdownComponent: React.FC<ReusableDropdownProps> = ({
       localStorage.setItem('selectedModel', selectedOption?.value ?? '');
     }
   };
-  const allOptions = useMemo(() => options, [options]);
+  const allOptions = useMemo(() => {
+    const normalized = options ?? [];
+    const hasCustom = normalized.some((opt) => (typeof opt === 'string' ? opt === 'custom' : opt.value === 'custom'));
+    return hasCustom ? normalized : [...normalized, 'custom'];
+  }, [options]);
   return (
     <>
       <div className={view === 'ContentView' ? 'w-[150px]' : ''}>

@@ -1,5 +1,7 @@
 import api from '../API/Index';
 
+const CUSTOM_LLM_API_KEY = 'dummy';
+
 const getAdditionalMetrics = async (
   question: string,
   context: string[],
@@ -21,6 +23,8 @@ const getAdditionalMetrics = async (
     if (customLLMModel && customLLMBaseUrl) {
       formData.append('custom_llm_model', customLLMModel);
       formData.append('custom_llm_base_url', customLLMBaseUrl);
+      formData.append('custom_llm_api_key', CUSTOM_LLM_API_KEY);
+      formData.append('api_key', CUSTOM_LLM_API_KEY);
     }
 
     const response = await api.post(`/additional_metrics`, formData, {

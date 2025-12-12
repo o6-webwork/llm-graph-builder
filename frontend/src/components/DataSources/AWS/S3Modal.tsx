@@ -71,6 +71,8 @@ const S3Modal: React.FC<S3ModalProps> = ({ hideModal, open }) => {
           source_type: 's3 bucket',
           custom_llm_model: selectedModelOption === 'custom' ? customLLMModel : undefined,
           custom_llm_base_url: selectedModelOption === 'custom' ? customLLMBaseUrl : undefined,
+          custom_llm_api_key: selectedModelOption === 'custom' ? 'dummy' : undefined,
+          api_key: selectedModelOption === 'custom' ? 'dummy' : undefined,
         });
         setStatus('success');
         if (apiResponse?.data.status == 'Failed' || !apiResponse.data) {
