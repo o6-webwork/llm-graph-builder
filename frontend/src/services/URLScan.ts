@@ -1,6 +1,8 @@
 import { ScanProps, ServerResponse } from '../types';
 import api from '../API/Index';
 
+const CUSTOM_LLM_API_KEY = 'dummy';
+
 const urlScanAPI = async (props: ScanProps) => {
   try {
     const formData = new FormData();
@@ -25,6 +27,8 @@ const urlScanAPI = async (props: ScanProps) => {
     if (props.custom_llm_model && props.custom_llm_base_url) {
       formData.append('custom_llm_model', props.custom_llm_model);
       formData.append('custom_llm_base_url', props.custom_llm_base_url);
+      formData.append('custom_llm_api_key', CUSTOM_LLM_API_KEY);
+      formData.append('api_key', CUSTOM_LLM_API_KEY);
     }
     if (props.accessKey?.length) {
       formData.append('aws_access_key_id', props?.accessKey);

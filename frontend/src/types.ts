@@ -88,6 +88,8 @@ export type ExtractParams = Pick<CustomFile, 'wikiQuery' | 'model' | 'sourceUrl'
   additional_instructions?: string;
   custom_llm_model?: string;
   custom_llm_base_url?: string;
+  custom_llm_api_key?: string;
+  api_key?: string;
 } & { [key: string]: any };
 
 export type UploadParams = {
@@ -98,6 +100,8 @@ export type UploadParams = {
   originalname: string;
   custom_llm_model?: string;
   custom_llm_base_url?: string;
+  custom_llm_api_key?: string;
+  api_key?: string;
 } & { [key: string]: any };
 
 export type FormDataParams = ExtractParams | UploadParams;
@@ -363,6 +367,8 @@ export interface ScanProps {
   access_token?: string;
   custom_llm_model?: string;
   custom_llm_base_url?: string;
+  custom_llm_api_key?: string;
+  api_key?: string;
 }
 export type alertStateType = {
   showAlert: boolean;

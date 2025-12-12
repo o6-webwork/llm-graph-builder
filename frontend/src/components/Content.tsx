@@ -128,7 +128,6 @@ const Content: React.FC<ContentProps> = ({
     processedCount,
     setProcessedCount,
     setchatModes,
-    model,
     additionalInstructions,
     setAdditionalInstructions,
   } = useFileContext();
@@ -273,9 +272,14 @@ const Content: React.FC<ContentProps> = ({
     const selectedValue = selectedOption?.value ?? '';
     setSelectedModelOption(selectedValue);
     localStorage.setItem('selectedModel', selectedValue);
+    if (!selectedValue) {
+      setModel('');
+      return;
+    }
     if (selectedValue === 'custom') {
-      setModel(customLLMModel);
-      applyModelToPendingFiles(customLLMModel);
+      const nextModel = customLLMModel?.trim() || 'custom';
+      setModel(nextModel);
+      applyModelToPendingFiles(nextModel);
       return;
     }
     setModel(selectedValue);
@@ -286,8 +290,9 @@ const Content: React.FC<ContentProps> = ({
     setCustomLLMModel(sanitizedValue);
     localStorage.setItem('customLLMModel', sanitizedValue);
     if (isCustomModelSelected) {
-      setModel(sanitizedValue);
-      applyModelToPendingFiles(sanitizedValue);
+      const nextModel = sanitizedValue || 'custom';
+      setModel(nextModel);
+      applyModelToPendingFiles(nextModel);
     }
   };
   const handleCustomUrlChange = (value: string) => {
@@ -370,10 +375,11 @@ const Content: React.FC<ContentProps> = ({
         fileItem.accessToken,
         additionalInstructions,
         isCustomModelSelected ? customLLMModel : undefined,
-        isCustomModelSelected ? customLLMBaseUrl : undefined
+        isCustomModelSelected ? customLLMBaseUrl : undefined,
+        isCustomModelSelected ? 'dummy' : undefined
       );
       if (apiResponse?.status === 'Failed') {
-        let errorobj = { error: apiResponse.error, message: apiResponse.message, fileName: apiResponse.file_name };
+        const errorobj = { error: apiResponse.error, message: apiResponse.message, fileName: apiResponse.file_name };
         throw new Error(JSON.stringify(errorobj));
       } else if (fileItem.size != undefined && fileItem.size < largeFileSize) {
         if (apiResponse.data.message) {
@@ -526,7 +532,7 @@ const Content: React.FC<ContentProps> = ({
       const batch = queue.items.slice(0, batchSize);
       data = triggerBatchProcessing(batch, selectedRows as CustomFile[], isSelectedFiles, false);
     } else {
-      let mergedfiles = [...selectedRows];
+      const mergedfiles = [...selectedRows];
       let filesToProcess: CustomFile[] = [];
       if (mergedfiles.length > batchSize) {
         filesToProcess = mergedfiles.slice(0, batchSize);
@@ -780,7 +786,7 @@ const Content: React.FC<ContentProps> = ({
           }
         }
       } else {
-        let errorobj = { error: response.data.error, message: response.data.message };
+        const errorobj = { error: response.data.error, message: response.data.message };
         throw new Error(JSON.stringify(errorobj));
       }
       setShowDeletePopUp(false);
@@ -970,9 +976,9 @@ const Content: React.FC<ContentProps> = ({
         viewPoint={viewPoint}
         selectedRows={childRef.current?.getSelectedRows()}
       />
-      <div className={`n-bg-palette-neutral-bg-default main-content-wrapper`}>
+      <div className='n-bg-palette-neutral-bg-default main-content-wrapper flex flex-col min-h-screen relative'>
         <Flex
-          className='w-full absolute top-0'
+          className='w-full py-2'
           alignItems='center'
           justifyContent='space-between'
           flexDirection='row'
@@ -1039,37 +1045,44 @@ const Content: React.FC<ContentProps> = ({
           </div>
         </Flex>
 
-        <FileTable
-          connectionStatus={connectionStatus}
-          setConnectionStatus={setConnectionStatus}
-          onInspect={useCallback((name) => {
-            setInspectedName(name);
-            setOpenGraphView(true);
-            setViewPoint('tableView');
-          }, [])}
-          onRetry={useCallback((id) => {
-            setRetryFile(id);
-            toggleRetryPopup();
-          }, [])}
-          onChunkView={useCallback(
-            async (name) => {
-              setDocumentName(name);
-              if (name != documentName) {
-                toggleChunkPopup();
-                if (totalPageCount) {
-                  setTotalPageCount(null);
+        <div className='flex-1'>
+          <FileTable
+            connectionStatus={connectionStatus}
+            setConnectionStatus={setConnectionStatus}
+            onInspect={useCallback((name) => {
+              setInspectedName(name);
+              setOpenGraphView(true);
+              setViewPoint('tableView');
+            }, [])}
+            onRetry={useCallback((id) => {
+              setRetryFile(id);
+              toggleRetryPopup();
+            }, [])}
+            onChunkView={useCallback(
+              async (name) => {
+                setDocumentName(name);
+                if (name != documentName) {
+                  toggleChunkPopup();
+                  if (totalPageCount) {
+                    setTotalPageCount(null);
+                  }
+                  setCurrentPage(1);
+                  await getChunks(name, 1);
                 }
-                setCurrentPage(1);
-                await getChunks(name, 1);
-              }
-            },
-            [documentName, totalPageCount]
-          )}
-          ref={childRef}
-          handleGenerateGraph={processWaitingFilesOnRefresh}
-        ></FileTable>
+              },
+              [documentName, totalPageCount]
+            )}
+            ref={childRef}
+            handleGenerateGraph={processWaitingFilesOnRefresh}
+          ></FileTable>
+        </div>
 
-        <Flex className={`p-2.5  mt-1.5 absolute bottom-0 w-full`} justifyContent='space-between' flexDirection={'row'}>
+        <Flex
+          className='p-2.5 mt-auto w-full n-bg-palette-neutral-bg-default'
+          justifyContent='space-between'
+          flexDirection={'row'}
+          style={{ position: 'sticky', bottom: 0, zIndex: 5 }}
+        >
           <div>
             <DropdownComponent
               onSelect={handleDropdownChange}

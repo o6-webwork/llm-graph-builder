@@ -66,6 +66,8 @@ const GCSModal: React.FC<GCSModalProps> = ({ hideModal, open, openGCSModal }) =>
           access_token: codeResponse.access_token,
           custom_llm_model: selectedModelOption === 'custom' ? customLLMModel : undefined,
           custom_llm_base_url: selectedModelOption === 'custom' ? customLLMBaseUrl : undefined,
+          custom_llm_api_key: selectedModelOption === 'custom' ? 'dummy' : undefined,
+          api_key: selectedModelOption === 'custom' ? 'dummy' : undefined,
         });
         if (apiResponse.data.status == 'Failed' || !apiResponse.data) {
           showErrorToast(apiResponse?.data?.message);
