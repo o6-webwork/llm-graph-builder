@@ -60,7 +60,7 @@ export default function ConnectionModal({
   const [searchParams, setSearchParams] = useSearchParams();
   const [userDbVectorIndex, setUserDbVectorIndex] = useState<number | undefined>(initialuserdbvectorindex ?? undefined);
   const [vectorIndexLoading, setVectorIndexLoading] = useState<boolean>(false);
-  const { model } = useFileContext();
+  const { model, selectedModelOption, customLLMModel, customLLMBaseUrl } = useFileContext();
   const connectRef = useRef<HTMLButtonElement>(null);
   const uriRef = useRef<HTMLInputElement>(null);
   const databaseRef = useRef<HTMLInputElement>(null);
@@ -244,11 +244,16 @@ export default function ConnectionModal({
         const pattern = /^[^,]+,[^,]+,[^,]+$/;
         if (existingRels && existingRels.selectedOptions.length) {
           if (!pattern.test(existingRels.selectedOptions[0].value)) {
+            if (selectedModelOption === 'custom' && (!customLLMBaseUrl.trim() || !customLLMModel.trim())) {
+              throw new Error('Please provide custom LLM URL and model name.');
+            }
             const response = await getNodeLabelsAndRelTypesFromText(
               model,
               JSON.stringify({ nodes: existingNodes.selectedOptions, rels: existingRels.selectedOptions }),
               false,
-              true
+              true,
+              selectedModelOption === 'custom' ? customLLMModel : undefined,
+              selectedModelOption === 'custom' ? customLLMBaseUrl : undefined
             );
             console.log(response);
           }

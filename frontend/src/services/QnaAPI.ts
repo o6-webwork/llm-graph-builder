@@ -1,11 +1,15 @@
 import api from '../API/Index';
 
+const CUSTOM_LLM_API_KEY = 'dummy';
+
 export const chatBotAPI = async (
   question: string,
   session_id: string,
   model: string,
   mode: string,
-  document_names?: (string | undefined)[]
+  document_names?: (string | undefined)[],
+  customLLMModel?: string,
+  customLLMBaseUrl?: string
 ) => {
   try {
     const formData = new FormData();
@@ -14,6 +18,12 @@ export const chatBotAPI = async (
     formData.append('model', model);
     formData.append('mode', mode);
     formData.append('document_names', JSON.stringify(document_names));
+    if (customLLMModel && customLLMBaseUrl) {
+      formData.append('custom_llm_model', customLLMModel);
+      formData.append('custom_llm_base_url', customLLMBaseUrl);
+      formData.append('custom_llm_api_key', CUSTOM_LLM_API_KEY);
+      formData.append('api_key', CUSTOM_LLM_API_KEY);
+    }
     const startTime = Date.now();
     const response = await api.post(`/chat_bot`, formData, {
       headers: {

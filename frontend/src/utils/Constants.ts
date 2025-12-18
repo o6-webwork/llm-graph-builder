@@ -3,42 +3,59 @@ import { GraphType, OptionType, PatternOption } from '../types';
 import { getDateTime, getDescriptionForChatMode } from './Utils';
 import chatbotmessages from '../assets/ChatbotMessages.json';
 import schemaExamples from '../assets/newSchema.json';
+
+const ensureCustomModel = (models: string[]) => (models.includes('custom') ? models : [...models, 'custom']);
+const parseModels = (rawModels: string | undefined, fallback: string[]) =>
+  ensureCustomModel(
+    rawModels?.trim()
+      ? rawModels
+          .split(',')
+          .map((model) => model.trim())
+          .filter(Boolean)
+      : fallback
+  );
+
+const defaultLlmOptions = [
+  'openai_gpt_4o',
+  'openai_gpt_4o_mini',
+  'openai_gpt_4.1',
+  'openai_gpt_4.1_mini',
+  'openai_gpt_o3_mini',
+  'gemini_1.5_pro',
+  'gemini_1.5_flash',
+  'gemini_2.0_flash',
+  'gemini_2.5_pro',
+  'diffbot',
+  'azure_ai_gpt_35',
+  'azure_ai_gpt_4o',
+  'ollama_llama3',
+  'groq_llama3_70b',
+  'anthropic_claude_4_sonnet',
+  'fireworks_llama4_maverick',
+  'fireworks_llama4_scout',
+  'fireworks_qwen72b_instruct',
+  'bedrock_nova_micro_v1',
+  'bedrock_nova_lite_v1',
+  'bedrock_nova_pro_v1',
+  'fireworks_deepseek_r1',
+  'fireworks_deepseek_v3',
+  'llama4_maverick',
+  'fireworks_qwen3_30b',
+  'fireworks_qwen3_235b',
+];
+const defaultProdLlmOptions = [
+  'openai_gpt_4o',
+  'openai_gpt_4o_mini',
+  'diffbot',
+  'gemini_1.5_flash',
+  'gemini_2.0_flash',
+];
 export const APP_SOURCES =
   process.env.VITE_REACT_APP_SOURCES !== ''
     ? (process.env.VITE_REACT_APP_SOURCES?.split(',') as string[])
     : ['s3', 'local', 'wiki', 'youtube', 'web'];
 
-export const llms =
-  process.env?.VITE_LLM_MODELS?.trim() != ''
-    ? (process.env.VITE_LLM_MODELS?.split(',') as string[])
-    : [
-        'openai_gpt_4o',
-        'openai_gpt_4o_mini',
-        'openai_gpt_4.1',
-        'openai_gpt_4.1_mini',
-        'openai_gpt_o3_mini',
-        'gemini_1.5_pro',
-        'gemini_1.5_flash',
-        'gemini_2.0_flash',
-        'gemini_2.5_pro',
-        'diffbot',
-        'azure_ai_gpt_35',
-        'azure_ai_gpt_4o',
-        'ollama_llama3',
-        'groq_llama3_70b',
-        'anthropic_claude_4_sonnet',
-        'fireworks_llama4_maverick',
-        'fireworks_llama4_scout',
-        'fireworks_qwen72b_instruct',
-        'bedrock_nova_micro_v1',
-        'bedrock_nova_lite_v1',
-        'bedrock_nova_pro_v1',
-        'fireworks_deepseek_r1',
-        'fireworks_deepseek_v3',
-        'llama4_maverick',
-        'fireworks_qwen3_30b',
-        'fireworks_qwen3_235b',
-      ];
+export const llms = parseModels(process.env?.VITE_LLM_MODELS, defaultLlmOptions);
 
 export const supportedLLmsForRagas = [
   'openai_gpt_4',
@@ -78,10 +95,7 @@ export const supportedLLmsForGroundTruthMetrics = [
   'fireworks_qwen3_30b',
   'fireworks_qwen3_235b',
 ];
-export const prodllms =
-  process.env.VITE_LLM_MODELS_PROD?.trim() != ''
-    ? (process.env.VITE_LLM_MODELS_PROD?.split(',') as string[])
-    : ['openai_gpt_4o', 'openai_gpt_4o_mini', 'diffbot', 'gemini_2.0_flash'];
+export const prodllms = parseModels(process.env.VITE_LLM_MODELS_PROD, defaultProdLlmOptions);
 
 export const chatModeLables = {
   vector: 'vector',
@@ -187,7 +201,7 @@ export const tooltips = {
   predinedSchema: 'Predefined Schema',
   dataImporterJson: 'Data Importer JSON',
 };
-export const PRODMODLES = ['openai_gpt_4o', 'openai_gpt_4o_mini', 'diffbot', 'gemini_1.5_flash'];
+export const PRODMODLES = prodllms;
 export const buttonCaptions = {
   exploreGraphWithBloom: 'Explore Graph',
   showPreviewGraph: 'Preview Graph',

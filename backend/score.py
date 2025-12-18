@@ -23,6 +23,7 @@ from typing import List, Optional
 from google.oauth2.credentials import Credentials
 import os
 from src.logger import CustomLogger
+from src.llm import register_custom_llm_config
 from datetime import datetime, timezone
 import time
 import gc
@@ -61,6 +62,24 @@ def validate_file_path(directory, filename):
    if not abs_file_path.startswith(abs_directory):
        raise ValueError("Invalid file path")
    return abs_file_path
+
+def configure_custom_llm_env(
+    model: Optional[str],
+    custom_model: Optional[str],
+    custom_base_url: Optional[str],
+    custom_api_key: str = "dummy",
+):
+    """
+    Prepare LLM configuration for a user-supplied model using provided values
+    instead of writing to process-wide environment variables.
+    """
+    if custom_model or custom_base_url:
+        if not custom_model or not custom_base_url:
+            raise HTTPException(status_code=400, detail="Please provide both custom_llm_model and custom_llm_base_url.")
+        api_key = custom_api_key or "dummy"
+        register_custom_llm_config(custom_model.strip(), custom_base_url.strip(), api_key)
+        return custom_model.strip()
+    return model
 
 def healthy_condition():
     output = {"healthy": True}
@@ -136,10 +155,14 @@ async def create_source_knowledge_graph_url(
     source_type=Form(None),
     gcs_project_id=Form(None),
     access_token=Form(None),
-    email=Form(None)
+    email=Form(None),
+    custom_llm_model=Form(None),
+    custom_llm_base_url=Form(None),
+    custom_llm_api_key=Form("dummy")
     ):
     
     try:
+        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url, custom_llm_api_key)
         start = time.time()
         if source_url is not None:
             source = source_url
@@ -218,7 +241,10 @@ async def extract_knowledge_graph_from_file(
     access_token=Form(None),
     retry_condition=Form(None),
     additional_instructions=Form(None),
-    email=Form(None)
+    email=Form(None),
+    custom_llm_model=Form(None),
+    custom_llm_base_url=Form(None),
+    custom_llm_api_key=Form("dummy")
 ):
     """
     Calls 'extract_graph_from_file' in a new thread to create Neo4jGraph from a
@@ -235,6 +261,7 @@ async def extract_knowledge_graph_from_file(
           Nodes and Relations created in Neo4j databse for the pdf file
     """
     try:
+        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url, custom_llm_api_key)
         start_time = time.time()
         graph = create_graph_database_connection(uri, userName, password, database)   
         graphDb_data_Access = graphDBdataAccess(graph)
@@ -415,10 +442,11 @@ async def post_processing(uri=Form(None), userName=Form(None), password=Form(Non
         gc.collect()
                 
 @app.post("/chat_bot")
-async def chat_bot(uri=Form(None),model=Form(None),userName=Form(None), password=Form(None), database=Form(None),question=Form(None), document_names=Form(None),session_id=Form(None),mode=Form(None),email=Form(None)):
+async def chat_bot(uri=Form(None),model=Form(None),userName=Form(None), password=Form(None), database=Form(None),question=Form(None), document_names=Form(None),session_id=Form(None),mode=Form(None),email=Form(None), custom_llm_model=Form(None), custom_llm_base_url=Form(None)):
     logging.info(f"QA_RAG called at {datetime.now()}")
     qa_rag_start_time = time.time()
     try:
+        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url)
         if mode == "graph":
             graph = Neo4jGraph( url=uri,username=userName,password=password,database=database,sanitize = True, refresh_schema=True)
         else:
@@ -563,9 +591,10 @@ async def connect(uri=Form(None), userName=Form(None), password=Form(None), data
 @app.post("/upload")
 async def upload_large_file_into_chunks(file:UploadFile = File(...), chunkNumber=Form(None), totalChunks=Form(None), 
                                         originalname=Form(None), model=Form(None), uri=Form(None), userName=Form(None), 
-                                        password=Form(None), database=Form(None),email=Form(None)):
+                                        password=Form(None), database=Form(None),email=Form(None), custom_llm_model=Form(None), custom_llm_base_url=Form(None)):
     try:
         start = time.time()
+        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url)
         graph = create_graph_database_connection(uri, userName, password, database)
         result = await asyncio.to_thread(upload_file, graph, model, file, chunkNumber, totalChunks, originalname, uri, CHUNK_DIR, MERGED_DIR)
         end = time.time()
@@ -761,8 +790,9 @@ async def cancelled_job(uri=Form(None), userName=Form(None), password=Form(None)
         gc.collect()
 
 @app.post("/populate_graph_schema")
-async def populate_graph_schema(input_text=Form(None), model=Form(None), is_schema_description_checked=Form(None),is_local_storage=Form(None),email=Form(None)):
+async def populate_graph_schema(input_text=Form(None), model=Form(None), is_schema_description_checked=Form(None),is_local_storage=Form(None),email=Form(None), custom_llm_model=Form(None), custom_llm_base_url=Form(None)):
     try:
+        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url)
         start = time.time()
         result = populate_graph_schema_from_text(input_text, model, is_schema_description_checked, is_local_storage)
         end = time.time()
@@ -916,8 +946,12 @@ async def calculate_metric(question: str = Form(),
                            context: str = Form(),
                            answer: str = Form(),
                            model: str = Form(),
-                           mode: str = Form()):
+                           mode: str = Form(),
+                           custom_llm_model: str = Form(None),
+                           custom_llm_base_url: str = Form(None),
+                           custom_llm_api_key: str = Form("dummy")):
     try:
+        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url, custom_llm_api_key)
         start = time.time()
         context_list = [str(item).strip() for item in json.loads(context)] if context else []
         answer_list = [str(item).strip() for item in json.loads(answer)] if answer else []
@@ -957,8 +991,12 @@ async def calculate_additional_metrics(question: str = Form(),
                                         reference: str = Form(),
                                         model: str = Form(),
                                         mode: str = Form(),
+                                        custom_llm_model: str = Form(None),
+                                        custom_llm_base_url: str = Form(None),
+                                        custom_llm_api_key: str = Form("dummy"),
 ):
    try:
+       model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url, custom_llm_api_key)
        context_list = [str(item).strip() for item in json.loads(context)] if context else []
        answer_list = [str(item).strip() for item in json.loads(answer)] if answer else []
        mode_list = [str(item).strip() for item in json.loads(mode)] if mode else []

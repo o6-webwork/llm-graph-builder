@@ -17,7 +17,7 @@ export default function useSourceInput(
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [status, setStatus] = useState<'unknown' | 'success' | 'info' | 'warning' | 'danger'>('unknown');
   const [statusMessage, setStatusMessage] = useState<string>('');
-  const { setFilesData, model, filesData } = useFileContext();
+  const { setFilesData, model, filesData, selectedModelOption, customLLMModel, customLLMBaseUrl } = useFileContext();
 
   const onChangeHandler: React.ChangeEventHandler<HTMLInputElement> = useCallback((e) => {
     setIsFocused(true);
@@ -67,6 +67,11 @@ export default function useSourceInput(
       }
       if (isValid) {
         try {
+          if (selectedModelOption === 'custom' && (!customLLMModel.trim() || !customLLMBaseUrl.trim())) {
+            setStatus('danger');
+            setStatusMessage('Please provide custom LLM URL and model name.');
+            return;
+          }
           setStatus('info');
           setIsLoading(true);
           setStatusMessage('Scanning...');
@@ -74,6 +79,12 @@ export default function useSourceInput(
             model: model,
             source_type: fileSource,
           };
+          if (selectedModelOption === 'custom') {
+            params.custom_llm_model = customLLMModel;
+            params.custom_llm_base_url = customLLMBaseUrl;
+            params.custom_llm_api_key = 'dummy';
+            params.api_key = 'dummy';
+          }
           if (isWikiQuery) {
             params.wikiquery = url.trim();
           } else if (isYoutubeLink || isWebLink) {

@@ -3,17 +3,28 @@ import { url } from './Utils';
 import { ExtractParams, UploadParams } from '../types';
 import { apiCall } from '../services/CommonAPI';
 
+const CUSTOM_LLM_API_KEY = 'dummy';
+
 // Upload Call
 export const uploadAPI = async (
   file: Blob,
   model: string,
   chunkNumber: number,
   totalChunks: number,
-  originalname: string
+  originalname: string,
+  customLLMModel?: string,
+  customLLMBaseUrl?: string,
+  customLLMApiKey: string = CUSTOM_LLM_API_KEY
 ): Promise<any> => {
   const urlUpload = `${url()}/upload`;
   const method: Method = 'post';
   const additionalParams: UploadParams = { file, model, chunkNumber, totalChunks, originalname };
+  if (customLLMModel && customLLMBaseUrl) {
+    additionalParams.custom_llm_model = customLLMModel;
+    additionalParams.custom_llm_base_url = customLLMBaseUrl;
+    additionalParams.custom_llm_api_key = customLLMApiKey;
+    additionalParams.api_key = customLLMApiKey;
+  }
   const response = await apiCall(urlUpload, method, additionalParams);
   return response;
 };
@@ -37,7 +48,10 @@ export const extractAPI = async (
   gcs_project_id?: string,
   language?: string,
   access_token?: string,
-  additional_instructions?: string
+  additional_instructions?: string,
+  customLLMModel?: string,
+  customLLMBaseUrl?: string,
+  customLLMApiKey: string = CUSTOM_LLM_API_KEY
 ): Promise<any> => {
   const urlExtract = `${url()}/extract`;
   const method: Method = 'post';
@@ -132,6 +146,12 @@ export const extractAPI = async (
       retry_condition,
       additional_instructions,
     };
+  }
+  if (customLLMModel && customLLMBaseUrl) {
+    additionalParams.custom_llm_model = customLLMModel;
+    additionalParams.custom_llm_base_url = customLLMBaseUrl;
+    additionalParams.custom_llm_api_key = customLLMApiKey;
+    additionalParams.api_key = customLLMApiKey;
   }
   const response = await apiCall(urlExtract, method, additionalParams);
   return response;

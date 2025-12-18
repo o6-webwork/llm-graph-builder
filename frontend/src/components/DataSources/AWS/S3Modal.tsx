@@ -16,7 +16,7 @@ const S3Modal: React.FC<S3ModalProps> = ({ hideModal, open }) => {
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [isValid, setValid] = useState<boolean>(false);
-  const { setFilesData, model, filesData } = useFileContext();
+  const { setFilesData, model, filesData, selectedModelOption, customLLMModel, customLLMBaseUrl } = useFileContext();
 
   const reset = () => {
     setBucketUrl('');
@@ -27,6 +27,11 @@ const S3Modal: React.FC<S3ModalProps> = ({ hideModal, open }) => {
   };
 
   const submitHandler = async (url: string) => {
+    if (selectedModelOption === 'custom' && (!customLLMModel.trim() || !customLLMBaseUrl.trim())) {
+      setStatus('danger');
+      setStatusMessage('Please provide custom LLM URL and model name.');
+      return;
+    }
     const defaultValues: CustomFileBase = {
       processingTotalTime: 0,
       status: 'New',
@@ -64,6 +69,10 @@ const S3Modal: React.FC<S3ModalProps> = ({ hideModal, open }) => {
           accessKey: accessKey.trim(),
           secretKey: secretKey.trim(),
           source_type: 's3 bucket',
+          custom_llm_model: selectedModelOption === 'custom' ? customLLMModel : undefined,
+          custom_llm_base_url: selectedModelOption === 'custom' ? customLLMBaseUrl : undefined,
+          custom_llm_api_key: selectedModelOption === 'custom' ? 'dummy' : undefined,
+          api_key: selectedModelOption === 'custom' ? 'dummy' : undefined,
         });
         setStatus('success');
         if (apiResponse?.data.status == 'Failed' || !apiResponse.data) {

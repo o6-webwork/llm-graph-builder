@@ -11,13 +11,21 @@ import { LoadingSpinner } from '@neo4j-ndl/react';
 import { showErrorToast, showSuccessToast } from '../../../utils/Toasts';
 
 export default function DropZoneForSmallLayouts() {
-  const { filesData, setFilesData, model } = useFileContext();
+  const { filesData, setFilesData, model, selectedModelOption, customLLMModel, customLLMBaseUrl } = useFileContext();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isClicked, setIsClicked] = useState<boolean>(false);
   const { userCredentials, connectionStatus, isReadOnlyUser } = useCredentials();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const uploadFileInChunks = (file: File) => {
+    if (selectedModelOption === 'custom' && (!customLLMModel.trim() || !customLLMBaseUrl.trim())) {
+      showErrorToast('Provide custom LLM URL and model name before uploading.', true);
+      setIsClicked(false);
+      return;
+    }
+    const customModelToUse = selectedModelOption === 'custom' ? customLLMModel : undefined;
+    const customUrlToUse = selectedModelOption === 'custom' ? customLLMBaseUrl : undefined;
+    const customApiKeyToUse = selectedModelOption === 'custom' ? 'dummy' : undefined;
     const totalChunks = Math.ceil(file.size / chunkSize);
     const chunkProgressIncrement = 100 / totalChunks;
     let chunkNumber = 1;
@@ -48,7 +56,16 @@ export default function DropZoneForSmallLayouts() {
           })
         );
         try {
-          const apiResponse = await uploadAPI(chunk, model, chunkNumber, totalChunks, file.name);
+          const apiResponse = await uploadAPI(
+            chunk,
+            model,
+            chunkNumber,
+            totalChunks,
+            file.name,
+            customModelToUse,
+            customUrlToUse,
+            customApiKeyToUse
+          );
           if (apiResponse?.status === 'Failed') {
             throw new Error(`message:${apiResponse.data.message},fileName:${apiResponse.data.file_name}`);
           } else {

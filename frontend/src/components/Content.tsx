@@ -6,6 +6,7 @@ import {
   Flex,
   StatusIndicator,
   useMediaQuery,
+  TextInput,
   Menu,
   SpotlightTarget,
   useSpotlightContext,
@@ -47,7 +48,7 @@ import { useMessageContext } from '../context/UserMessages';
 import PostProcessingToast from './Popups/GraphEnhancementDialog/PostProcessingCheckList/PostProcessingToast';
 import { getChunkText } from '../services/getChunkText';
 import ChunkPopUp from './Popups/ChunkPopUp';
-import { isExpired, isFileReadyToProcess } from '../utils/Utils';
+import { capitalizeWithUnderscore, isExpired, isFileReadyToProcess } from '../utils/Utils';
 import { useHasSelections } from '../hooks/useHasSelections';
 import { ChevronUpIconOutline, ChevronDownIconOutline } from '@neo4j-ndl/react/icons';
 import { ThemeWrapperContext } from '../context/ThemeWrapper';
@@ -104,6 +105,12 @@ const Content: React.FC<ContentProps> = ({
     filesData,
     setFilesData,
     setModel,
+    selectedModelOption,
+    setSelectedModelOption,
+    customLLMBaseUrl,
+    setCustomLLMBaseUrl,
+    customLLMModel,
+    setCustomLLMModel,
     selectedNodes,
     selectedRels,
     selectedTokenChunkSize,
@@ -121,7 +128,6 @@ const Content: React.FC<ContentProps> = ({
     processedCount,
     setProcessedCount,
     setchatModes,
-    model,
     additionalInstructions,
     setAdditionalInstructions,
   } = useFileContext();
@@ -228,26 +234,71 @@ const Content: React.FC<ContentProps> = ({
   const isFirstTimeUser = useMemo(() => {
     return localStorage.getItem('neo4j.connection') === null;
   }, []);
+
+  const applyModelToPendingFiles = useCallback(
+    (nextModel: string) => {
+      setFilesData((prevfiles) => {
+        return prevfiles.map((curfile) => {
+          return {
+            ...curfile,
+            model:
+              curfile.status === 'New' || curfile.status === 'Ready to Reprocess' ? (nextModel ?? '') : curfile.model,
+          };
+        });
+      });
+    },
+    [setFilesData]
+  );
+  const isCustomModelSelected = selectedModelOption === 'custom';
+  const isCustomConfigValid = isCustomModelSelected
+    ? customLLMModel.trim().length > 0 && customLLMBaseUrl.trim().length > 0
+    : true;
+  const dropdownValue = useMemo<OptionType | undefined>(() => {
+    if (!selectedModelOption) {
+      return undefined;
+    }
+    if (selectedModelOption === 'custom') {
+      return { value: 'custom', label: customLLMModel ? `Custom (${customLLMModel})` : 'Custom' };
+    }
+    return { value: selectedModelOption, label: capitalizeWithUnderscore(selectedModelOption) };
+  }, [customLLMModel, selectedModelOption]);
+
   useEffect(() => {
     if (!isAuthenticated && !connectionStatus && isFirstTimeUser) {
       setIsOpen(true);
     }
   }, [connectionStatus, isAuthenticated, isFirstTimeUser]);
   const handleDropdownChange = (selectedOption: OptionType | null | void) => {
-    if (selectedOption?.value) {
-      setModel(selectedOption?.value);
+    const selectedValue = selectedOption?.value ?? '';
+    setSelectedModelOption(selectedValue);
+    localStorage.setItem('selectedModel', selectedValue);
+    if (!selectedValue) {
+      setModel('');
+      return;
     }
-    setFilesData((prevfiles) => {
-      return prevfiles.map((curfile) => {
-        return {
-          ...curfile,
-          model:
-            curfile.status === 'New' || curfile.status === 'Ready to Reprocess'
-              ? (selectedOption?.value ?? '')
-              : curfile.model,
-        };
-      });
-    });
+    if (selectedValue === 'custom') {
+      const nextModel = customLLMModel?.trim() || 'custom';
+      setModel(nextModel);
+      applyModelToPendingFiles(nextModel);
+      return;
+    }
+    setModel(selectedValue);
+    applyModelToPendingFiles(selectedValue);
+  };
+  const handleCustomModelChange = (value: string) => {
+    const sanitizedValue = value.trim();
+    setCustomLLMModel(sanitizedValue);
+    localStorage.setItem('customLLMModel', sanitizedValue);
+    if (isCustomModelSelected) {
+      const nextModel = sanitizedValue || 'custom';
+      setModel(nextModel);
+      applyModelToPendingFiles(nextModel);
+    }
+  };
+  const handleCustomUrlChange = (value: string) => {
+    const sanitizedValue = value.trim();
+    setCustomLLMBaseUrl(sanitizedValue);
+    localStorage.setItem('customLLMBaseUrl', sanitizedValue);
   };
   const getChunks = async (name: string, pageNo: number) => {
     chunksTextAbortController.current = new AbortController();
@@ -322,10 +373,13 @@ const Content: React.FC<ContentProps> = ({
         fileItem.googleProjectId,
         fileItem.language,
         fileItem.accessToken,
-        additionalInstructions
+        additionalInstructions,
+        isCustomModelSelected ? customLLMModel : undefined,
+        isCustomModelSelected ? customLLMBaseUrl : undefined,
+        isCustomModelSelected ? 'dummy' : undefined
       );
       if (apiResponse?.status === 'Failed') {
-        let errorobj = { error: apiResponse.error, message: apiResponse.message, fileName: apiResponse.file_name };
+        const errorobj = { error: apiResponse.error, message: apiResponse.message, fileName: apiResponse.file_name };
         throw new Error(JSON.stringify(errorobj));
       } else if (fileItem.size != undefined && fileItem.size < largeFileSize) {
         if (apiResponse.data.message) {
@@ -478,7 +532,7 @@ const Content: React.FC<ContentProps> = ({
       const batch = queue.items.slice(0, batchSize);
       data = triggerBatchProcessing(batch, selectedRows as CustomFile[], isSelectedFiles, false);
     } else {
-      let mergedfiles = [...selectedRows];
+      const mergedfiles = [...selectedRows];
       let filesToProcess: CustomFile[] = [];
       if (mergedfiles.length > batchSize) {
         filesToProcess = mergedfiles.slice(0, batchSize);
@@ -689,8 +743,8 @@ const Content: React.FC<ContentProps> = ({
   );
 
   const disableCheck = useMemo(
-    () => (!selectedfileslength ? dropdowncheck : !newFilecheck),
-    [selectedfileslength, filesData, newFilecheck]
+    () => (!selectedfileslength ? dropdowncheck : !newFilecheck) || (isCustomModelSelected && !isCustomConfigValid),
+    [selectedfileslength, dropdowncheck, newFilecheck, isCustomConfigValid, isCustomModelSelected]
   );
 
   const showGraphCheck = useMemo(
@@ -732,7 +786,7 @@ const Content: React.FC<ContentProps> = ({
           }
         }
       } else {
-        let errorobj = { error: response.data.error, message: response.data.message };
+        const errorobj = { error: response.data.error, message: response.data.message };
         throw new Error(JSON.stringify(errorobj));
       }
       setShowDeletePopUp(false);
@@ -749,6 +803,10 @@ const Content: React.FC<ContentProps> = ({
   };
 
   const onClickHandler = () => {
+    if (isCustomModelSelected && !isCustomConfigValid) {
+      showErrorToast('Please provide a custom model URL and model name.');
+      return;
+    }
     const selectedRows = childRef.current?.getSelectedRows();
     if (selectedRows?.length) {
       const expiredFilesExists = selectedRows.some(
@@ -918,9 +976,9 @@ const Content: React.FC<ContentProps> = ({
         viewPoint={viewPoint}
         selectedRows={childRef.current?.getSelectedRows()}
       />
-      <div className={`n-bg-palette-neutral-bg-default main-content-wrapper`}>
+      <div className='n-bg-palette-neutral-bg-default main-content-wrapper flex flex-col min-h-screen relative'>
         <Flex
-          className='w-full absolute top-0'
+          className='w-full py-2'
           alignItems='center'
           justifyContent='space-between'
           flexDirection='row'
@@ -987,46 +1045,76 @@ const Content: React.FC<ContentProps> = ({
           </div>
         </Flex>
 
-        <FileTable
-          connectionStatus={connectionStatus}
-          setConnectionStatus={setConnectionStatus}
-          onInspect={useCallback((name) => {
-            setInspectedName(name);
-            setOpenGraphView(true);
-            setViewPoint('tableView');
-          }, [])}
-          onRetry={useCallback((id) => {
-            setRetryFile(id);
-            toggleRetryPopup();
-          }, [])}
-          onChunkView={useCallback(
-            async (name) => {
-              setDocumentName(name);
-              if (name != documentName) {
-                toggleChunkPopup();
-                if (totalPageCount) {
-                  setTotalPageCount(null);
+        <div className='flex-1'>
+          <FileTable
+            connectionStatus={connectionStatus}
+            setConnectionStatus={setConnectionStatus}
+            onInspect={useCallback((name) => {
+              setInspectedName(name);
+              setOpenGraphView(true);
+              setViewPoint('tableView');
+            }, [])}
+            onRetry={useCallback((id) => {
+              setRetryFile(id);
+              toggleRetryPopup();
+            }, [])}
+            onChunkView={useCallback(
+              async (name) => {
+                setDocumentName(name);
+                if (name != documentName) {
+                  toggleChunkPopup();
+                  if (totalPageCount) {
+                    setTotalPageCount(null);
+                  }
+                  setCurrentPage(1);
+                  await getChunks(name, 1);
                 }
-                setCurrentPage(1);
-                await getChunks(name, 1);
-              }
-            },
-            [documentName, totalPageCount]
-          )}
-          ref={childRef}
-          handleGenerateGraph={processWaitingFilesOnRefresh}
-        ></FileTable>
+              },
+              [documentName, totalPageCount]
+            )}
+            ref={childRef}
+            handleGenerateGraph={processWaitingFilesOnRefresh}
+          ></FileTable>
+        </div>
 
-        <Flex className={`p-2.5  mt-1.5 absolute bottom-0 w-full`} justifyContent='space-between' flexDirection={'row'}>
+        <Flex
+          className='p-2.5 mt-auto w-full n-bg-palette-neutral-bg-default'
+          justifyContent='space-between'
+          flexDirection={'row'}
+          style={{ position: 'sticky', bottom: 0, zIndex: 5 }}
+        >
           <div>
             <DropdownComponent
               onSelect={handleDropdownChange}
               options={llms ?? ['']}
               placeholder='Select LLM Model'
-              defaultValue={model}
+              defaultValue={selectedModelOption}
+              value={dropdownValue}
               view='ContentView'
               isDisabled={false}
             />
+            {isCustomModelSelected && (
+              <div className='mt-2 flex flex-col gap-2 w-[320px] max-w-full'>
+                <TextInput
+                  value={customLLMBaseUrl}
+                  onChange={(e) => handleCustomUrlChange(e.target.value)}
+                  isFluid
+                  label='Custom LLM URL'
+                  htmlAttributes={{
+                    placeholder: 'https://your-llm-endpoint/v1',
+                  }}
+                />
+                <TextInput
+                  value={customLLMModel}
+                  onChange={(e) => handleCustomModelChange(e.target.value)}
+                  isFluid
+                  label='Custom Model Name'
+                  htmlAttributes={{
+                    placeholder: 'e.g. my-model-name',
+                  }}
+                />
+              </div>
+            )}
           </div>
           <Flex flexDirection='row' gap='4' className='self-end mb-2.5' flexWrap='wrap'>
             <SpotlightTarget id='generategraphbtn'>
