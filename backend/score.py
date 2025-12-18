@@ -23,6 +23,7 @@ from typing import List, Optional
 from google.oauth2.credentials import Credentials
 import os
 from src.logger import CustomLogger
+from src.llm import register_custom_llm_config
 from datetime import datetime, timezone
 import time
 import gc
@@ -62,16 +63,21 @@ def validate_file_path(directory, filename):
        raise ValueError("Invalid file path")
    return abs_file_path
 
-def configure_custom_llm_env(model: Optional[str], custom_model: Optional[str], custom_base_url: Optional[str]):
+def configure_custom_llm_env(
+    model: Optional[str],
+    custom_model: Optional[str],
+    custom_base_url: Optional[str],
+    custom_api_key: str = "dummy",
+):
     """
-    Prepare environment variables for a user-supplied LLM configuration.
+    Prepare LLM configuration for a user-supplied model using provided values
+    instead of writing to process-wide environment variables.
     """
     if custom_model or custom_base_url:
         if not custom_model or not custom_base_url:
             raise HTTPException(status_code=400, detail="Please provide both custom_llm_model and custom_llm_base_url.")
-        api_key = os.environ.get("CUSTOM_LLM_API_KEY") or os.environ.get("OPENAI_API_KEY") or ""
-        env_key = f"LLM_MODEL_CONFIG_{custom_model.lower().strip()}"
-        os.environ[env_key] = f"{custom_model.strip()},{custom_base_url.strip()},{api_key}"
+        api_key = custom_api_key or "dummy"
+        register_custom_llm_config(custom_model.strip(), custom_base_url.strip(), api_key)
         return custom_model.strip()
     return model
 
@@ -151,11 +157,12 @@ async def create_source_knowledge_graph_url(
     access_token=Form(None),
     email=Form(None),
     custom_llm_model=Form(None),
-    custom_llm_base_url=Form(None)
+    custom_llm_base_url=Form(None),
+    custom_llm_api_key=Form("dummy")
     ):
     
     try:
-        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url)
+        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url, custom_llm_api_key)
         start = time.time()
         if source_url is not None:
             source = source_url
@@ -236,7 +243,8 @@ async def extract_knowledge_graph_from_file(
     additional_instructions=Form(None),
     email=Form(None),
     custom_llm_model=Form(None),
-    custom_llm_base_url=Form(None)
+    custom_llm_base_url=Form(None),
+    custom_llm_api_key=Form("dummy")
 ):
     """
     Calls 'extract_graph_from_file' in a new thread to create Neo4jGraph from a
@@ -253,7 +261,7 @@ async def extract_knowledge_graph_from_file(
           Nodes and Relations created in Neo4j databse for the pdf file
     """
     try:
-        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url)
+        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url, custom_llm_api_key)
         start_time = time.time()
         graph = create_graph_database_connection(uri, userName, password, database)   
         graphDb_data_Access = graphDBdataAccess(graph)
@@ -940,9 +948,10 @@ async def calculate_metric(question: str = Form(),
                            model: str = Form(),
                            mode: str = Form(),
                            custom_llm_model: str = Form(None),
-                           custom_llm_base_url: str = Form(None)):
+                           custom_llm_base_url: str = Form(None),
+                           custom_llm_api_key: str = Form("dummy")):
     try:
-        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url)
+        model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url, custom_llm_api_key)
         start = time.time()
         context_list = [str(item).strip() for item in json.loads(context)] if context else []
         answer_list = [str(item).strip() for item in json.loads(answer)] if answer else []
@@ -984,9 +993,10 @@ async def calculate_additional_metrics(question: str = Form(),
                                         mode: str = Form(),
                                         custom_llm_model: str = Form(None),
                                         custom_llm_base_url: str = Form(None),
+                                        custom_llm_api_key: str = Form("dummy"),
 ):
    try:
-       model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url)
+       model = configure_custom_llm_env(model, custom_llm_model, custom_llm_base_url, custom_llm_api_key)
        context_list = [str(item).strip() for item in json.loads(context)] if context else []
        answer_list = [str(item).strip() for item in json.loads(answer)] if answer else []
        mode_list = [str(item).strip() for item in json.loads(mode)] if mode else []

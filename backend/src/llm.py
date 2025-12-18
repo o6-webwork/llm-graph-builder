@@ -16,13 +16,24 @@ import google.auth
 from src.shared.constants import ADDITIONAL_INSTRUCTIONS
 from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
 import re
-from typing import List
+from typing import List, Dict
+
+# In-memory registry for dynamically provided LLM configs (model -> config string)
+LLM_MODEL_CONFIGS: Dict[str, str] = {}
+
+
+def register_custom_llm_config(model: str, base_url: str, api_key: str) -> None:
+    """
+    Store custom LLM configuration in-memory so it is not persisted to environment variables.
+    """
+    key = model.lower().strip()
+    LLM_MODEL_CONFIGS[key] = f"{model},{base_url},{api_key}"
 
 def get_llm(model: str):
     """Retrieve the specified language model based on the model name."""
     model = model.lower().strip()
     env_key = f"LLM_MODEL_CONFIG_{model}"
-    env_value = os.environ.get(env_key)
+    env_value = LLM_MODEL_CONFIGS.get(model) or os.environ.get(env_key)
 
     if not env_value:
         err = f"Environment variable '{env_key}' is not defined as per format or missing"
