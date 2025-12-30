@@ -48,6 +48,7 @@ services:
         - VITE_CHUNK_OVERLAP=${VITE_CHUNK_OVERLAP-}
         - VITE_TOKENS_PER_CHUNK=${VITE_TOKENS_PER_CHUNK-}
         - VITE_CHUNK_TO_COMBINE=${VITE_CHUNK_TO_COMBINE-}
+        - VITE_SKIP_AUTH=${VITE_SKIP_AUTH-true}
         - DEPLOYMENT_ENV=local
     volumes:
       - ./frontend:/app
