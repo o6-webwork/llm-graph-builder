@@ -6,8 +6,8 @@ services:
     volumes:
       - ./backend:/code
     environment:
-      - NEO4J_URI=neo4j://neo4j-browser:7687
-      - NEO4J_PASSWORD=${NEO4J_PASSWORD-neo4j}
+      - NEO4J_URI=neo4j://100.64.0.100:7687
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD-1234}
       - NEO4J_USERNAME=${NEO4J_USERNAME-neo4j}
       - GCP_LOG_METRICS_ENABLED=False
       - GCS_FILE_CACHE=False
@@ -35,8 +35,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL-http://192.168.137.188:8000}
-        - VITE_REACT_APP_SOURCES=${VITE_REACT_APP_SOURCES-local,wiki,s3}
+        - VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL-http://localhost:8000}
+        - VITE_REACT_APP_SOURCES=${VITE_REACT_APP_SOURCES-local,wiki,s3,postgresql}
         - VITE_TIME_PER_PAGE=${VITE_TIME_PER_PAGE-50}
         - VITE_CHUNK_SIZE=${VITE_CHUNK_SIZE-5242880}
         - VITE_LARGE_FILE_SIZE=${VITE_LARGE_FILE_SIZE-5242880}
@@ -70,7 +70,7 @@ services:
       - 7687:7687
     environment:
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-      - NEO4J_AUTH=none
+      - NEO4J_AUTH=neo4j/1234
       - NEO4J_apoc_export_file_enabled=true
       - NEO4J_apoc_import_file_enabled=true
       - NEO4J_apoc_import_file_use__neo4j__config=true

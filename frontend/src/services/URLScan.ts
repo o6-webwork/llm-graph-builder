@@ -48,6 +48,12 @@ const urlScanAPI = async (props: ScanProps) => {
     if (props?.access_token) {
       formData.append('access_token', props.access_token);
     }
+    if (props?.pg_username) {
+      formData.append('pg_username', props.pg_username);
+    }
+    if (props?.pg_password) {
+      formData.append('pg_password', props.pg_password);
+    }
 
     const response: ServerResponse = await api.post(`/url/scan`, formData, {
       headers: {

@@ -22,6 +22,7 @@ import { RiChatSettingsLine } from 'react-icons/ri';
 import { IconButtonWithToolTip } from '../UI/IconButtonToolTip';
 import GCSButton from '../DataSources/GCS/GCSButton';
 import S3Component from '../DataSources/AWS/S3Bucket';
+import PostgreSQLButton from '../DataSources/PostgreSQL/PostgreSQLButton';
 import WebButton from '../DataSources/Web/WebButton';
 import DropZoneForSmallLayouts from '../DataSources/Local/DropZoneForSmallLayouts';
 import { useCredentials } from '../../context/UserCredentials';
@@ -39,6 +40,7 @@ const SideNav: React.FC<SideNavProps> = ({
   toggleGCSModal,
   toggleGenericModal,
   toggles3Modal,
+  togglePostgresModal,
   setIsleftExpanded,
 }) => {
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -135,6 +137,23 @@ const SideNav: React.FC<SideNavProps> = ({
                   openModal={toggleGenericModal}
                   isDisabled={!connectionStatus}
                 ></WebButton>
+              </TooltipWrapper>
+            }
+          />
+        );
+      }
+
+      if (APP_SOURCES.includes('postgresql') && position === 'left') {
+        dataSourceItems.push(
+          <SideNavigation.Item
+            key='postgresql'
+            icon={
+              <TooltipWrapper tooltip='PostgreSQL' placement='right'>
+                <PostgreSQLButton
+                  isLargeDesktop={false}
+                  openModal={togglePostgresModal}
+                  isDisabled={!connectionStatus}
+                ></PostgreSQLButton>
               </TooltipWrapper>
             }
           />

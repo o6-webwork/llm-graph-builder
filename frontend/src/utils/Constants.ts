@@ -53,7 +53,7 @@ const defaultProdLlmOptions = [
 export const APP_SOURCES =
   process.env.VITE_REACT_APP_SOURCES !== ''
     ? (process.env.VITE_REACT_APP_SOURCES?.split(',') as string[])
-    : ['s3', 'local', 'wiki', 'youtube', 'web'];
+    : ['s3', 'local', 'wiki', 'youtube', 'web', 'postgresql'];
 
 export const llms = parseModels(process.env?.VITE_LLM_MODELS, defaultLlmOptions);
 
@@ -211,6 +211,7 @@ export const buttonCaptions = {
   youtube: 'Youtube',
   gcs: 'GCS',
   amazon: 'Amazon S3',
+  postgresql: 'PostgreSQL',
   noLables: 'No Labels Found in the Database',
   dropYourCreds: 'Drop your neo4j credentials file here',
   analyze: 'Analyze text to extract graph schema',

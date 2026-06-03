@@ -130,6 +130,11 @@ export interface GCSModalProps extends Omit<S3ModalProps, ''> {
   openGCSModal: () => void;
 }
 
+export interface PostgreSQLModalProps {
+  hideModal: () => void;
+  open: boolean;
+}
+
 export interface SideNavProps {
   isExpanded: boolean;
   position: 'left' | 'right';
@@ -143,6 +148,7 @@ export interface SideNavProps {
   toggles3Modal: () => void;
   toggleGCSModal: () => void;
   toggleGenericModal: () => void;
+  togglePostgresModal: () => void;
   setIsleftExpanded?: Dispatch<SetStateAction<boolean>>;
 }
 
@@ -151,9 +157,11 @@ export interface DrawerProps {
   shows3Modal: boolean;
   showGCSModal: boolean;
   showGenericModal: boolean;
+  showPostgresModal: boolean;
   toggleS3Modal: () => void;
   toggleGCSModal: () => void;
   toggleGenericModal: () => void;
+  togglePostgresModal: () => void;
 }
 
 export interface ContentProps {
@@ -369,6 +377,8 @@ export interface ScanProps {
   custom_llm_base_url?: string;
   custom_llm_api_key?: string;
   api_key?: string;
+  pg_username?: string;
+  pg_password?: string;
 }
 export type alertStateType = {
   showAlert: boolean;

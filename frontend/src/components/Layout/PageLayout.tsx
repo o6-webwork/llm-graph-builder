@@ -28,6 +28,7 @@ import DataImporterSchemaDialog from '../Popups/GraphEnhancementDialog/EnitityEx
 
 const GCSModal = lazy(() => import('../DataSources/GCS/GCSModal'));
 const S3Modal = lazy(() => import('../DataSources/AWS/S3Modal'));
+const PostgreSQLModal = lazy(() => import('../DataSources/PostgreSQL/PostgreSQLModal'));
 const GenericModal = lazy(() => import('../WebSources/GenericSourceModal'));
 const ConnectionModal = lazy(() => import('../Popups/ConnectionModal/ConnectionModal'));
 const spotlightsforunauthenticated = [
@@ -163,6 +164,7 @@ const PageLayout: React.FC = () => {
   const [shows3Modal, toggleS3Modal] = useReducer((s) => !s, false);
   const [showGCSModal, toggleGCSModal] = useReducer((s) => !s, false);
   const [showGenericModal, toggleGenericModal] = useReducer((s) => !s, false);
+  const [showPostgresModal, togglePostgresModal] = useReducer((s) => !s, false);
   const {
     connectionStatus,
     setIsReadOnlyUser,
@@ -637,6 +639,7 @@ const PageLayout: React.FC = () => {
             toggles3Modal={toggleS3Modal}
             toggleGCSModal={toggleGCSModal}
             toggleGenericModal={toggleGenericModal}
+            togglePostgresModal={togglePostgresModal}
             isExpanded={isLeftExpanded}
             position='left'
             toggleDrawer={toggleLeftDrawer}
@@ -646,9 +649,11 @@ const PageLayout: React.FC = () => {
               shows3Modal={shows3Modal}
               showGCSModal={showGCSModal}
               showGenericModal={showGenericModal}
+              showPostgresModal={showPostgresModal}
               toggleGCSModal={toggleGCSModal}
               toggleGenericModal={toggleGenericModal}
               toggleS3Modal={toggleS3Modal}
+              togglePostgresModal={togglePostgresModal}
               isExpanded={isLeftExpanded}
             />
           )}
@@ -692,6 +697,7 @@ const PageLayout: React.FC = () => {
             toggleGCSModal={toggleGCSModal}
             toggles3Modal={toggleS3Modal}
             toggleGenericModal={toggleGenericModal}
+            togglePostgresModal={togglePostgresModal}
             setIsleftExpanded={setIsLeftExpanded}
           />
         </div>
@@ -705,6 +711,11 @@ const PageLayout: React.FC = () => {
           {APP_SOURCES.includes('s3') && (
             <Suspense fallback={<FallBackDialog />}>
               <S3Modal hideModal={toggleS3Modal} open={shows3Modal} />
+            </Suspense>
+          )}
+          {APP_SOURCES.includes('postgresql') && (
+            <Suspense fallback={<FallBackDialog />}>
+              <PostgreSQLModal hideModal={togglePostgresModal} open={showPostgresModal} />
             </Suspense>
           )}
 
@@ -722,6 +733,7 @@ const PageLayout: React.FC = () => {
               toggles3Modal={toggleS3Modal}
               toggleGCSModal={toggleGCSModal}
               toggleGenericModal={toggleGenericModal}
+              togglePostgresModal={togglePostgresModal}
               isExpanded={isLeftExpanded}
               position='left'
               toggleDrawer={toggleLeftDrawer}
@@ -767,6 +779,7 @@ const PageLayout: React.FC = () => {
               toggleGCSModal={toggleGCSModal}
               toggles3Modal={toggleS3Modal}
               toggleGenericModal={toggleGenericModal}
+              togglePostgresModal={togglePostgresModal}
               setIsleftExpanded={setIsLeftExpanded}
             />
           </div>

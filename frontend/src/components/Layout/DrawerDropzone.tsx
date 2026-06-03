@@ -3,6 +3,7 @@ import { Drawer, Flex, StatusIndicator, Typography, useMediaQuery } from '@neo4j
 import DropZone from '../DataSources/Local/DropZone';
 import S3Component from '../DataSources/AWS/S3Bucket';
 import GCSButton from '../DataSources/GCS/GCSButton';
+import PostgreSQLButton from '../DataSources/PostgreSQL/PostgreSQLButton';
 import CustomAlert from '../UI/Alert';
 import FallBackDialog from '../UI/FallBackDialog';
 import { useAlertContext } from '../../context/Alert';
@@ -13,14 +14,17 @@ import GenericModal from '../WebSources/GenericSourceModal';
 import { DrawerProps } from '../../types';
 const S3Modal = lazy(() => import('../DataSources/AWS/S3Modal'));
 const GCSModal = lazy(() => import('../DataSources/GCS/GCSModal'));
+const PostgreSQLModal = lazy(() => import('../DataSources/PostgreSQL/PostgreSQLModal'));
 const DrawerDropzone: React.FC<DrawerProps> = ({
   isExpanded,
   toggleS3Modal,
   toggleGCSModal,
   toggleGenericModal,
+  togglePostgresModal,
   shows3Modal,
   showGCSModal,
   showGenericModal,
+  showPostgresModal,
 }) => {
   const { closeAlert, alertState } = useAlertContext();
   const { isBackendConnected, connectionStatus } = useCredentials();
@@ -109,6 +113,14 @@ const DrawerDropzone: React.FC<DrawerProps> = ({
                         <GCSButton openModal={toggleGCSModal} />
                         <Suspense fallback={<FallBackDialog />}>
                           <GCSModal openGCSModal={toggleGCSModal} open={showGCSModal} hideModal={toggleGCSModal} />
+                        </Suspense>
+                      </div>
+                    )}
+                    {APP_SOURCES.includes('postgresql') && (
+                      <div className='outline-dashed imageBg w-[245px]'>
+                        <PostgreSQLButton openModal={togglePostgresModal} />
+                        <Suspense fallback={<FallBackDialog />}>
+                          <PostgreSQLModal hideModal={togglePostgresModal} open={showPostgresModal} />
                         </Suspense>
                       </div>
                     )}
